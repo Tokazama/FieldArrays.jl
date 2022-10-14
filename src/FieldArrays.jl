@@ -49,9 +49,6 @@ struct NamedValues{K<:Names,V}
     end
 end
 
-_values_type(x::NamedValues) = typeof(getfield(x, :values))
-_values_type(T::Type{<:NamedValues}) = fieldtype(T, :values)
-
 const FieldVectorType{names} = Union{Names{names},FieldIndices{names},FieldMasks{names}}
 
 Base.Tuple(::Names{names}) where {names} = names
@@ -60,8 +57,10 @@ Base.Tuple(::FieldMasks{masks}) where {masks} = masks
 Base.Tuple(x::NamedValues) = Tuple(getfield(x, :values))
 
 Base.keytype(x::Union{Type{<:NamedValues},NamedValues}) = Symbol
-Base.valtype(x::Union{Type{<:NamedValues},NamedValues}) = eltype(_values_type(x))
-Base.eltype(x::Union{Type{<:NamedValues},NamedValues}) = eltype(_values_type(x))
+Base.valtype(x::NamedValues) = valtype(getfield(x, :values))
+Base.eltype(x::NamedValues) = eltype(getfield(x, :values))
+Base.eltype(T::Type{<:NamedValues}) = eltype(fieldtype(T, :values))
+Base.valtype(T::Type{<:NamedValues}) = eltype(fieldtype(T, :values))
 Base.eltype(x::Union{Type{<:FieldMasks},FieldMasks}) = Bool
 Base.eltype(x::Union{Type{<:FieldIndices},FieldIndices}) = Int
 Base.eltype(x::Union{Type{<:Names},Names}) = Symbol
@@ -73,21 +72,26 @@ end
 
 Base.values(x::NamedValues) = getfield(x, :values)
 Base.keys(x::NamedValues) = getfield(x, :keys)
+Base.propertynames(x::NamedValues) = Tuple(getfield(x, :keys))
 @inline Base.haskey(x::NamedValues, key::Symbol) = _in(key, Tuple(getfield(x, :keys)))
 
 Base.firstindex(::Union{FieldVectorType,NamedValues}) = 1
-Base.lastindex(x::Union{FieldVectorType,NamedValues}) = length(x)
+Base.lastindex(x::FieldVectorType) = length(x)
 Base.axes(x::FieldVectorType) = axes(Tuple(x))
 Base.eachindex(x::NamedValues) = eachindex(getfield(x, :keys))
-Base.length(x::FieldVectorType) = nfields(Tuple(x))
-Base.length(x::NamedValues) = length(getfield(x, :keys))
+Base.length(x::FieldIndices) = nfields(Tuple(x))
+Base.length(x::FieldMasks) = nfields(Tuple(x))
+Base.length(x::Names) = nfields(Tuple(x))
+Base.length(x::NamedValues) = nfields(Tuple(getfield(x, :keys)))
+Base.lastindex(x::NamedValues) = nfields(Tuple(getfield(x, :keys)))
+
 Base.first(x::FieldVectorType) = getfield(Tuple(x), 1)
 Base.last(x::FieldVectorType) = last(Tuple(x))
 Base.isempty(::FieldVectorType{()}) = true
 Base.isempty(::FieldVectorType) = false
 Base.isempty(x::NamedValues) = isempty(getfield(x, :keys))
 Base.empty(::FieldIndices) = FieldIndices()
-Base.empty(::Names) =  Names()  
+Base.empty(::Names) =  Names()
 function Base.empty(x::NamedValues)
     _NamedValues(empty(getfield(x, :keys)), empty(getfield(x, :keys)))
 end
@@ -105,7 +109,6 @@ end
 end
 
 @specialize
-
 
 include("indexing.jl")
 include("sets.jl")

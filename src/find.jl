@@ -31,7 +31,7 @@ end
 Base.findnext(v::Union{Fix2{typeof(==),Symbol},Fix2{typeof(isequal),Symbol}}, x::Names, start::Int) = findnext(v.x, x, start)
 @inline function Base.findnext(v::Symbol, x::Names, start::Int)
     # _findenext only checks upper bound, so we check lower bound here
-    i = _findnext(v, Tuple(x), start < 1 ? 1 : start)  
+    i = _findnext(v, Tuple(x), start < 1 ? 1 : start)
     i === 0 ? nothing : i
 end
 @assume_effects :total function _findnext(v::Symbol, x::Tuple{Vararg{Symbol}}, start::Int)
@@ -87,10 +87,10 @@ end
 end
 
 function Base.allequal(n::Names)
-    if length(n) < 2
+    t = Tuple(n)
+    if nfields(t) < 2
         return true
     else
-        t = Tuple(n)
         return _findnext(getfield(t, 1), t, 2) === 2
     end
 end
